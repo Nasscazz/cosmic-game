@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Космический Рейс</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        body {
+            background: #050519;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            color: white;
+            touch-action: manipulation;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+        
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(5, 5, 25, 0.85);
+            z-index: 100;
+        }
+        
+        .title {
+            font-size: 3rem;
+            color: white;
+            margin-bottom: 2rem;
+            text-shadow: 0 0 10px #00aaff, 0 0 20px #00aaff;
+            text-align: center;
+        }
+        
+        .menu {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            width: 80%;
+            max-width: 400px;
+        }
+        
+        .button {
+            background: #6464c8;
+            color: white;
+            border: none;
+            padding: 1.2rem;
+            font-size: 1.4rem;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            box-shadow: 0 4px 0 #42428a, 0 0 10px rgba(100, 100, 200, 0.5);
+            font-weight: bold;
+            width: 100%;
+        }
+        
+        .button:hover, .button:active {
+            background: #7a7ae6;
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #42428a, 0 0 15px rgba(100, 100, 200, 0.7);
+        }
+        
+        .button.start { background: #50a050; box-shadow: 0 4px 0 #3a783a; }
+        .button.start:hover { background: #60b860; }
+        .button.quit { background: #c85050; box-shadow: 0 4px 0 #8a3a3a; }
+        .button.quit:hover { background: #e06060; }
+        .button.pause { background: #96965a; box-shadow: 0 4px 0 #6e6e42; }
+        .button.pause:hover { background: #aaa86a; }
+        
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            padding: 0 20px;
+            z-index: 50;
+        }
+        
+        .control-btn {
+            width: 90px;
+            height: 90px;
+            background: #5a5078;
+            border-radius: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: bold;
+            box-shadow: 0 5px 0 #3a3550, 0 0 10px rgba(90, 80, 120, 0.5);
+            cursor: pointer;
+            transition: all 0.1s;
+            text-align: center;
+            padding: 5px;
+        }
+        
+        .control-btn:active {
+            background: #6a6088;
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #3a3550, 0 0 15px rgba(90, 80, 120, 0.7);
+        }
+        
+        .control-btn.fire {
+            background: #c89632;
+            box-shadow: 0 5px 0 #8a6a22;
+        }
+        
+        .control-btn.fire:active {
+            background: #d8a642;
+        }
+        
+        .stats {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 1.2rem;
+            z-index: 50;
+            text-shadow: 1px 1px 2px black;
+        }
+        
+        .stat {
+            margin-bottom: 10px;
+            color: white;
+        }
+        
+        .stat.highscore {
+            color: #ffd700;
+        }
+        
+        .bonus-indicator {
+            position: absolute;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 5px 15px;
+            border-radius: 10px;
+            font-size: 1rem;
+            margin-top: 5px;
+        }
+        
+        .speed-indicator {
+            color: #00ff64;
+            border-left: 4px solid #00ff64;
+        }
+        
+        .weapon-indicator {
+            color: #ff6400;
+            border-left: 4px solid #ff6400;
+        }
+        
+        .instructions {
+            color: #cccccc;
+            text-align: center;
+            margin: 1rem 0;
+            font-size: 1.1rem;
+            line-height: 1.5;
+        }
+        
+        @media (max-width: 768px) {
+            .title { font-size: 2.5rem; }
+            .button { padding: 1rem; font-size: 1.2rem; }
+            .control-btn { width: 80px; height: 80px; font-size: 1rem; }
+            .stats { font-size: 1rem; }
+        }
+        
+        @media (max-width: 480px) {
+            .title { font-size: 2rem; margin-bottom: 1rem; }
+            .button { padding: 0.8rem; font-size: 1rem; }
+            .control-btn { width: 70px; height: 70px; font-size: 0.9rem; }
+            .controls { padding: 0 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        
+        <!-- Главное меню -->
+        <div id="menuScreen" class="screen" style="display: flex;">
+            <h1 class="title">КОСМИЧЕСКИЙ РЕЙС</h1>
+            <div class="instructions">
+                Управляйте ракетой!<br>
+                Избегайте метеоритов<br>
+                Собирайте бонусы:<br>
+                Зеленый - скорость<br>
+                Оранжевый - оружие<br>
+                Стреляйте по метеоритам!
+            </div>
+            <div class="menu">
+                <button class="button start" onclick="startGame()">НАЧАТЬ ИГРУ</button>
+                <button class="button quit" onclick="quitGame()">ВЫЙТИ</button>
+            </div>
+            <div id="highScoreMenu" class="stat highscore" style="position: absolute; bottom: 20px;"></div>
+        </div>
+        
+        <!-- Игровой экран -->
+        <div id="gameScreen" class="screen">
+            <div class="stats">
+                <div id="score" class="stat">Счет: 0</div>
+                <div id="gameTime" class="stat">Время: 0с</div>
+                <div id="highScore" class="stat highscore">Рекорд: 0</div>
+                <div id="destroyed" class="stat">Уничтожено: 0</div>
+                <div id="speedIndicator" class="bonus-indicator speed-indicator" style="display: none;"></div>
+                <div id="weaponIndicator" class="bonus-indicator weapon-indicator" style="display: none;"></div>
+            </div>
+            
+            <div class="controls">
+                <div class="control-btn" id="leftBtn" ontouchstart="moveLeft(true)" ontouchend="moveLeft(false)">ВЛЕВО</div>
+                <div class="control-btn" id="rightBtn" ontouchstart="moveRight(true)" ontouchend="moveRight(false)">ВПРАВО</div>
+                <div class="control-btn fire" id="fireBtn" ontouchstart="shoot()">ОГОНЬ</div>
+                <button class="button pause" onclick="togglePause()" style="position: absolute; top: 20px; right: 20px; width: 110px; height: 40px; font-size: 1rem;">ПАУЗА</button>
+            </div>
+        </div>
+        
+        <!-- Пауза -->
+        <div id="pauseScreen" class="screen">
+            <h1 class="title">ПАУЗА</h1>
+            <div class="instructions">Нажмите для продолжения</div>
+            <button class="button start" onclick="togglePause()">ПРОДОЛЖИТЬ</button>
+        </div>
+        
+        <!-- Game Over -->
+        <div id="gameOverScreen" class="screen">
+            <h1 class="title" style="color: #ff5050;">МИССИЯ ПРОВАЛЕНА</h1>
+            <div class="instructions" style="font-size: 1.3rem; margin-bottom: 2rem;">
+                <div id="finalScore">Счет: 0</div>
+                <div id="finalTime">Время: 0с</div>
+                <div id="finalDestroyed">Уничтожено: 0</div>
+                <div id="finalDodged">Избежано: 0</div>
+            </div>
+            <div class="menu">
+                <button class="button start" onclick="restartGame()">ИГРАТЬ СНОВА</button>
+                <button class="button" onclick="showMenu()">В МЕНЮ</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== КОНСТАНТЫ И ПЕРЕМЕННЫЕ ====================
+        const GameState = {
+            MENU: 1,
+            PLAYING: 2,
+            GAME_OVER: 3,
+            PAUSED: 4
+        };
+
+        const ParticleType = {
+            ENGINE: 1,
+            EXPLOSION: 2,
+            TRAIL: 3,
+            BULLET: 4
+        };
+
+        const PowerUpType = {
+            SPEED: 1,
+            WEAPON: 2
+        };
+
+        let canvas, ctx;
+        let gameState = GameState.MENU;
+        let lastTime = 0;
+        let particles = [];
+        let meteors = [];
+        let powerups = [];
+        let stars = [];
+        let score = 0;
+        let highScore = localStorage.getItem('cosmicHighScore') || 0;
+        let gameTime = 0;
+        let meteorsDestroyed = 0;
+        let meteorsDodged = 0;
+        let lastMeteorSpawn = 0;
+        let meteorSpawnInterval = 1500;
+        let lastPowerUpSpawn = 0;
+        let powerUpSpawnInterval = 8000;
+        let difficultyTimer = 0;
+        let difficultyInterval = 10000;
+        let rocket;
+        let WIDTH, HEIGHT;
+
+        // ==================== КЛАСС ВЕКТОРА ====================
+        class Vector2 {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+            }
+            
+            add(other) {
+                return new Vector2(this.x + other.x, this.y + other.y);
+            }
+            
+            sub(other) {
+                return new Vector2(this.x - other.x, this.y - other.y);
+            }
+            
+            mul(scalar) {
+                return new Vector2(this.x * scalar, this.y * scalar);
+            }
+            
+            length() {
+                return Math.sqrt(this.x * this.x + this.y * this.y);
+            }
+            
+            normalize() {
+                const length = this.length();
+                if (length > 0) {
+                    return new Vector2(this.x / length, this.y / length);
+                }
+                return new Vector2(0, 0);
+            }
+        }
+
+        // ==================== КЛАСС ЧАСТИЦ ====================
+        class Particle {
+            constructor(position, velocity, type, size = 3, color = [255, 255, 255], lifetime = 1.0) {
+                this.position = position;
+                this.velocity = velocity;
+                this.type = type;
+                this.size = size;
+                this.color = color;
+                this.lifetime = lifetime;
+                this.maxLifetime = Math.max(0.001, lifetime);
+                this.active = true;
+            }
+            
+            update(dt) {
+                this.lifetime -= dt;
+                if (this.lifetime <= 0) {
+                    this.active = false;
+                    return;
+                }
+                
+                this.position.x += this.velocity.x * dt * 60;
+                this.position.y += this.velocity.y * dt * 60;
+                
+                if (this.type === ParticleType.ENGINE) {
+                    this.velocity.x *= 0.98;
+                    this.velocity.y *= 0.98;
+                }
+            }
+            
+            draw(ctx) {
+                if (!this.active) return;
+                
+                const lifetimeRatio = this.lifetime / this.maxLifetime;
+                
+                if (this.type === ParticleType.ENGINE) {
+                    const size = Math.max(1, this.size * lifetimeRatio);
+                    ctx.beginPath();
+                    ctx.arc(this.position.x, this.position.y, size, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(${this.color[0]}, ${this.color[1]}, ${this.color[2]}, ${lifetimeRatio})`;
+                    ctx.fill();
+                }
+                else if (this.type === ParticleType.EXPLOSION) {
+                    const size = Math.max(1, this.size * (1 - lifetimeRatio));
+                    ctx.beginPath();
+                    ctx.arc(this.position.x, this.position.y, size, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(${this.color[0]}, ${this.color[1]}, ${this.color[2]}, ${lifetimeRatio})`;
+                    ctx.fill();
+                }
+                else if (this.type === ParticleType.BULLET) {
+                    ctx.fillStyle = `rgb(255, 255, 0)`;
+                    ctx.fillRect(this.position.x - 2, this.position.y - 4, 4, 8);
+                    ctx.strokeStyle = `rgb(255, 200, 0)`;
+                    ctx.strokeRect(this.position.x - 2, this.position.y - 4, 4, 8);
+                }
+                else {
+                    ctx.beginPath();
+                    ctx.arc(this.position.x, this.position.y, this.size, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(${this.color[0]}, ${this.color[1]}, ${this.color[2]}, ${lifetimeRatio})`;
+                    ctx.fill();
+                }
+            }
+        }
+
+        // ==================== КЛАСС РАКЕТЫ ====================
+        class Rocket {
+            constructor() {
+                this.position = new Vector2(WIDTH / 2, HEIGHT - 150);
+                this.velocity = new Vector2(0, 0);
+                this.width = 30;
+                this.height = 80;
+                this.baseSpeed = 8;
+                this.speed = this.baseSpeed;
+                this.movingLeft = false;
+                this.movingRight = false;
+                this.enginePower = 0;
+                this.trailTimer = 0;
+                this.alive = true;
+                this.invulnerable = false;
+                this.invulnerabilityTimer = 0;
+                this.maxInvulnerabilityTime = 2.0;
+                this.speedBoost = false;
+                this.speedTimer = 0;
+                this.weaponActive = false;
+                this.weaponTimer = 0;
+                this.shootCooldown = 0.3;
+                this.lastShotTime = 0;
+            }
+            
+            update(dt) {
+                if (!this.alive) return;
+                
+                if (this.speedBoost) {
+                    this.speedTimer -= dt;
+                    if (this.speedTimer <= 0) {
+                        this.speedBoost = false;
+                        this.speed = this.baseSpeed;
+                        document.getElementById('speedIndicator').style.display = 'none';
+                    } else {
+                        document.getElementById('speedIndicator').textContent = `Скорость: ${Math.ceil(this.speedTimer)}с`;
+                    }
+                }
+                
+                if (this.weaponActive) {
+                    this.weaponTimer -= dt;
+                    if (this.weaponTimer <= 0) {
+                        this.weaponActive = false;
+                        document.getElementById('weaponIndicator').style.display = 'none';
+                    } else {
+                        document.getElementById('weaponIndicator').textContent = `Оружие: ${Math.ceil(this.weaponTimer)}с`;
+                    }
+                    
+                    const currentTime = Date.now() / 1000;
+                    if (currentTime - this.lastShotTime > this.shootCooldown) {
+                        this.shoot();
+                        this.lastShotTime = currentTime;
+                    }
+                }
+                
+                if (this.invulnerable) {
+                    this.invulnerabilityTimer -= dt;
+                    if (this.invulnerabilityTimer <= 0) {
+                        this.invulnerable = false;
+                    }
+                }
+                
+                if (this.movingLeft) {
+                    this.velocity.x = -this.speed;
+                } else if (this.movingRight) {
+                    this.velocity.x = this.speed;
+                } else {
+                    this.velocity.x *= 0.9;
+                }
+                
+                this.position.x += this.velocity.x;
+                this.position.x = Math.max(this.width/2, Math.min(WIDTH - this.width/2, this.position.x));
+                
+                if (this.movingLeft || this.movingRight) {
+                    this.enginePower = Math.min(1.0, this.enginePower + 0.1);
+                    this.createEngineParticles();
+                } else {
+                    this.enginePower = Math.max(0, this.enginePower - 0.05);
+                }
+                
+                this.trailTimer -= dt;
+                if (this.trailTimer <= 0 && (this.movingLeft || this.movingRight)) {
+                    this.createTrailParticle();
+                    this.trailTimer = 0.15;
+                }
+            }
+            
+            createEngineParticles() {
+                for (let i = 0; i < 2; i++) {
+                    const position = new Vector2(
+                        this.position.x + (Math.random() - 0.5) * 4,
+                        this.position.y + this.height/2
+                    );
+                    const velocity = new Vector2(
+                        (Math.random() - 0.5) * 0.5,
+                        Math.random() * 3 + 3
+                    );
+                    const lifetime = Math.random() * 0.4 + 0.4;
+                    const size = Math.floor(Math.random() * 4) + 3;
+                    const color = [
+                        Math.floor(Math.random() * 55) + 200,
+                        Math.floor(Math.random() * 100) + 100,
+                        Math.floor(Math.random() * 50)
+                    ];
+                    
+                    particles.push(new Particle(position, velocity, ParticleType.ENGINE, size, color, lifetime));
+                }
+            }
+            
+            createTrailParticle() {
+                const position = new Vector2(
+                    this.position.x + (Math.random() - 0.5) * 6,
+                    this.position.y + this.height/2 - 10
+                );
+                const velocity = new Vector2(0, Math.random() * 2 + 2);
+                const color = [180, 180, 220];
+                
+                particles.push(new Particle(position, velocity, ParticleType.TRAIL, 2, color, 0.8));
+            }
+            
+            shoot() {
+                const position = new Vector2(this.position.x, this.position.y - this.height/2);
+                const velocity = new Vector2(0, -20);
+                const color = [255, 255, 0];
+                
+                particles.push(new Particle(position, velocity, ParticleType.BULLET, 3, color, 2.0));
+            }
+            
+            canShoot() {
+                const currentTime = Date.now() / 1000;
+                return currentTime - this.lastShotTime > this.shootCooldown;
+            }
+            
+            manualShoot() {
+                if (this.canShoot()) {
+                    this.shoot();
+                    this.lastShotTime = Date.now() / 1000;
+                    return true;
+                }
+                return false;
+            }
+            
+            applyPowerUp(powerup) {
+                if (powerup.type === PowerUpType.SPEED) {
+                    this.speedBoost = true;
+                    this.speed = this.baseSpeed * 1.5;
+                    this.speedTimer = 10;
+                    document.getElementById('speedIndicator').style.display = 'block';
+                } else if (powerup.type === PowerUpType.WEAPON) {
+                    this.weaponActive = true;
+                    this.weaponTimer = 15;
+                    document.getElementById('weaponIndicator').style.display = 'block';
+                }
+            }
+            
+            draw(ctx) {
+                if (!this.alive) return;
+                if (this.invulnerable && Math.floor(Date.now() / 100) % 2 === 0) return;
+                
+                const baseColor = [220, 220, 230];
+                
+                // Корпус ракеты
+                ctx.fillStyle = `rgb(${baseColor[0]}, ${baseColor[1]}, ${baseColor[2]})`;
+                ctx.strokeStyle = `rgb(50, 50, 60)`;
+                ctx.lineWidth = 2;
+                
+                this.roundRect(ctx, 
+                    this.position.x - this.width/2, 
+                    this.position.y - this.height/2, 
+                    this.width, this.height, 8);
+                ctx.fill();
+                ctx.stroke();
+                
+                // Носовой обтекатель
+                ctx.fillStyle = `rgb(240, 240, 250)`;
+                ctx.strokeStyle = `rgb(50, 50, 60)`;
+                ctx.beginPath();
+                ctx.moveTo(this.position.x, this.position.y - this.height/2);
+                ctx.lineTo(this.position.x - this.width/2, this.position.y - this.height/2 + 20);
+                ctx.lineTo(this.position.x + this.width/2, this.position.y - this.height/2 + 20);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                
+                // Стабилизаторы
+                ctx.fillStyle = `rgb(100, 100, 110)`;
+                ctx.strokeStyle = `rgb(70, 70, 80)`;
+                ctx.lineWidth = 1;
+                
+                // Левый стабилизатор
+                ctx.beginPath();
+                ctx.moveTo(this.position.x - this.width/2, this.position.y + this.height/2 - 10);
+                ctx.lineTo(this.position.x - this.width/2 - 12, this.position.y + this.height/2);
+                ctx.lineTo(this.position.x - this.width/2, this.position.y + this.height/2);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                
+                // Правый стабилизатор
+                ctx.beginPath();
+                ctx.moveTo(this.position.x + this.width/2, this.position.y + this.height/2 - 10);
+                ctx.lineTo(this.position.x + this.width/2 + 12, this.position.y + this.height/2);
+                ctx.lineTo(this.position.x + this.width/2, this.position.y + this.height/2);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                
+                // Иллюминатор
+                ctx.fillStyle = `rgb(100, 150, 255)`;
+                ctx.beginPath();
+                ctx.arc(this.position.x, this.position.y - 10, 6, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Двигатель
+                if (this.enginePower > 0) {
+                    ctx.fillStyle = `rgb(80, 80, 90)`;
+                    ctx.fillRect(this.position.x - 8, this.position.y + this.height/2 - 5, 16, 10);
+                    
+                    const glowHeight = Math.floor(15 * this.enginePower);
+                    ctx.fillStyle = `rgb(255, ${150 + Math.floor(100 * this.enginePower)}, ${Math.floor(50 * this.enginePower)})`;
+                    ctx.beginPath();
+                    ctx.moveTo(this.position.x - 6, this.position.y + this.height/2 + 5);
+                    ctx.lineTo(this.position.x, this.position.y + this.height/2 + 5 + glowHeight);
+                    ctx.lineTo(this.position.x + 6, this.position.y + this.height/2 + 5);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                
+                // Индикаторы бонусов
+                if (this.speedBoost) {
+                    ctx.fillStyle = `rgb(0, 255, 100)`;
+                    ctx.fillRect(this.position.x - 15, this.position.y - this.height/2 - 20, 30, 5);
+                }
+                
+                if (this.weaponActive) {
+                    ctx.fillStyle = `rgb(255, 100, 0)`;
+                    ctx.fillRect(this.position.x - 15, this.position.y - this.height/2 - 25, 30, 5);
+                }
+            }
+            
+            roundRect(ctx, x, y, width, height, radius) {
+                ctx.beginPath();
+                ctx.moveTo(x + radius, y);
+                ctx.lineTo(x + width - radius, y);
+                ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+                ctx.lineTo(x + width, y + height - radius);
+                ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+                ctx.lineTo(x + radius, y + height);
+                ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+                ctx.lineTo(x, y + radius);
+                ctx.quadraticCurveTo(x, y, x + radius, y);
+                ctx.closePath();
+            }
+            
+            checkCollision(meteor) {
+                if (!this.alive || this.invulnerable) return false;
+                
+                const distance = Math.sqrt(
+                    Math.pow(this.position.x - meteor.position.x, 2) + 
+                    Math.pow(this.position.y - meteor.position.y, 2)
+                );
+                
+                const collisionDistance = meteor.radius + this.height / 3;
+                return distance < collisionDistance;
+            }
+            
+            checkPowerUpCollision(powerup) {
+                const distance = Math.sqrt(
+                    Math.pow(this.position.x - powerup.position.x, 2) + 
+                    Math.pow(this.position.y - powerup.position.y, 2)
+                );
+                
+                const collisionDistance = powerup.radius + this.height / 3;
+                return distance < collisionDistance;
+            }
+            
+            checkBulletCollision(bullet, meteor) {
+                const distance = Math.sqrt(
+                    Math.pow(bullet.position.x - meteor.position.x, 2) + 
+                    Math.pow(bullet.position.y - meteor.position.y, 2)
+                );
+                
+                return distance < meteor.radius;
+            }
+            
+            takeDamage() {
+                if (this.invulnerable) return;
+                
+                this.alive = false;
+                createExplosion(this.position.x, this.position.y, 30);
+            }
+            
+            respawn() {
+                this.position = new Vector2(WIDTH / 2, HEIGHT - 150);
+                this.velocity = new Vector2(0, 0);
+                this.movingLeft = false;
+                this.movingRight = false;
+                this.enginePower = 0;
+                this.alive = true;
+                this.invulnerable = true;
+                this.invulnerabilityTimer = this.maxInvulnerabilityTime;
+                this.speedBoost = false;
+                this.speed = this.baseSpeed;
+                this.weaponActive = false;
+                document.getElementById('speedIndicator').style.display = 'none';
+                document.getElementById('weaponIndicator').style.display = 'none';
+            }
+        }
+
+        // ==================== КЛАСС МЕТЕОРИТА ====================
+        class Meteor {
+            constructor(difficulty = 1.0) {
+                this.position = new Vector2(
+                    Math.random() * (WIDTH - 100) + 50,
+                    -Math.random() * 100 - 20
+                );
+                this.radius = Math.random() * 20 + 20;
+                this.speed = (Math.random() * 2 + 2) * Math.min(2.0, difficulty);
+                this.velocity = new Vector2(0, this.speed);
+                this.rotation = 0;
+                this.rotationSpeed = (Math.random() - 0.5) * 3;
+                this.vertices = this.generateVertices();
+                this.color = [
+                    Math.floor(Math.random() * 40) + 80,
+                    Math.floor(Math.random() * 20) + 60,
+                    Math.floor(Math.random() * 20) + 40
+                ];
+                this.health = 2;
+            }
+            
+            generateVertices() {
+                const vertices = [];
+                const numVertices = Math.floor(Math.random() * 4) + 7;
+                for (let i = 0; i < numVertices; i++) {
+                    const angle = 2 * Math.PI * i / numVertices;
+                    const distanceVariation = Math.random() * 0.6 + 0.7;
+                    const distance = this.radius * distanceVariation;
+                    vertices.push({
+                        x: Math.cos(angle) * distance,
+                        y: Math.sin(angle) * distance
+                    });
+                }
+                return vertices;
+            }
+            
+            update(dt) {
+                this.position.y += this.velocity.y * dt * 60;
+                this.rotation += this.rotationSpeed * dt;
+                return this.position.y > HEIGHT + 50;
+            }
+            
+            draw(ctx) {
+                ctx.save();
+                ctx.translate(this.position.x, this.position.y);
+                ctx.rotate(this.rotation * Math.PI / 180);
+                
+                ctx.fillStyle = `rgb(${this.color[0]}, ${this.color[1]}, ${this.color[2]})`;
+                ctx.beginPath();
+                
+                for (let i = 0; i < this.vertices.length; i++) {
+                    const vertex = this.vertices[i];
+                    if (i === 0) {
+                        ctx.moveTo(vertex.x, vertex.y);
+                    } else {
+                        ctx.lineTo(vertex.x, vertex.y);
+                    }
+                }
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.restore();
+                
+                if (this.health < 2) {
+                    ctx.fillStyle = this.health === 1 ? `rgb(255, 0, 0)` : `rgb(255, 100, 0)`;
+                    ctx.beginPath();
+                    ctx.arc(this.position.x, this.position.y, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            
+            takeDamage() {
+                this.health--;
+                return this.health <= 0;
+            }
+        }
+
+        // ==================== КЛАСС БОНУСА ====================
+        class PowerUp {
+            constructor() {
+                this.position = new Vector2(
+                    Math.random() * (WIDTH - 100) + 50,
+                    -Math.random() * 80 - 20
+                );
+                this.radius = 15;
+                this.type = Math.random() < 0.5 ? PowerUpType.SPEED : PowerUpType.WEAPON;
+                this.speed = Math.random() * 1 + 2;
+                this.velocity = new Vector2(0, this.speed);
+                this.rotation = 0;
+                this.rotationSpeed = (Math.random() - 0.5) * 6;
+                
+                if (this.type === PowerUpType.SPEED) {
+                    this.color = [0, 255, 100];
+                    this.glowColor = [100, 255, 150];
+                } else {
+                    this.color = [255, 100, 0];
+                    this.glowColor = [255, 150, 50];
+                }
+            }
+            
+            update(dt) {
+                this.position.y += this.velocity.y * dt * 60;
+                this.rotation += this.rotationSpeed * dt;
+                return this.position.y > HEIGHT + 50;
+            }
+            
+            draw(ctx) {
+                // Свечение
+                for (let i = 0; i < 3; i++) {
+                    const glowSize = this.radius + 3 - i;
+                    ctx.beginPath();
+                    ctx.arc(this.position.x, this.position.y, glowSize, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(${this.glowColor[0]}, ${this.glowColor[1]}, ${this.glowColor[2]}, ${0.7 - i * 0.2})`;
+                    ctx.fill();
+                }
+                
+                // Иконка
+                ctx.save();
+                ctx.translate(this.position.x, this.position.y);
+                ctx.rotate(this.rotation * Math.PI / 180);
+                ctx.fillStyle = `rgb(255, 255, 255)`;
+                
+                if (this.type === PowerUpType.SPEED) {
+                    // Молния
+                    ctx.beginPath();
+                    ctx.moveTo(0, -8);
+                    ctx.lineTo(5, 0);
+                    ctx.lineTo(-2, 0);
+                    ctx.lineTo(3, 8);
+                    ctx.lineTo(-5, 2);
+                    ctx.lineTo(0, 8);
+                    ctx.closePath();
+                    ctx.fill();
+                } else {
+                    // Пушка
+                    ctx.fillRect(-4, -8, 8, 16);
+                    ctx.fillStyle = `rgb(200, 200, 200)`;
+                    ctx.fillRect(-2, -10, 4, 4);
+                }
+                
+                ctx.restore();
+            }
+        }
+
+        // ==================== ЗВЁЗДНЫЙ ФОН ====================
+        class StarBackground {
+            constructor(numStars = 100) {
+                this.stars = [];
+                for (let i = 0; i < numStars; i++) {
+                    this.stars.push({
+                        position: new Vector2(Math.random() * WIDTH, Math.random() * HEIGHT),
+                        speed: Math.random() * 0.4 + 0.1,
+                        size: Math.random() * 2 + 1,
+                        brightness: Math.random() * 0.7 + 0.3
+                    });
+                }
+            }
+            
+            update() {
+                for (const star of this.stars) {
+                    star.position.y += star.speed;
+                    if (star.position.y > HEIGHT) {
+                        star.position.y = 0;
+                        star.position.x = Math.random() * WIDTH;
+                    }
+                }
+            }
+            
+            draw(ctx) {
+                for (const star of this.stars) {
+                    const colorValue = Math.floor(255 * star.brightness);
+                    ctx.fillStyle = `rgb(${colorValue}, ${colorValue}, ${colorValue})`;
+                    ctx.beginPath();
+                    ctx.arc(star.position.x, star.position.y, star.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+
+        // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
+        function createExplosion(x, y, count = 25) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 4 + 2;
+                const velocity = new Vector2(
+                    Math.cos(angle) * speed,
+                    Math.sin(angle) * speed
+                );
+                const lifetime = Math.random() * 0.8 + 0.4;
+                const size = Math.random() * 4 + 3;
+                const color = [
+                    Math.floor(Math.random() * 55) + 200,
+                    Math.floor(Math.random() * 100) + 50,
+                    Math.floor(Math.random() * 50)
+                ];
+                
+                particles.push(new Particle(new Vector2(x, y), velocity, ParticleType.EXPLOSION, size, color, lifetime));
+            }
+        }
+
+        function init() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // Загрузка рекорда
+            highScore = parseInt(localStorage.getItem('cosmicHighScore') || '0');
+            document.getElementById('highScoreMenu').textContent = `Рекорд: ${highScore}`;
+            document.getElementById('highScore').textContent = `Рекорд: ${highScore}`;
+            
+            // Создание звёзд
+            starBackground = new StarBackground(150);
+            
+            // Запуск игрового цикла
+            requestAnimationFrame(gameLoop);
+        }
+
+        function resizeCanvas() {
+            WIDTH = canvas.width = window.innerWidth;
+            HEIGHT = canvas.height = window.innerHeight;
+            
+            // Пересоздаём ракету при изменении размера
+            if (rocket) {
+                const oldAlive = rocket.alive;
+                rocket = new Rocket();
+                if (oldAlive) rocket.alive = true;
+            } else {
+                rocket = new Rocket();
+            }
+            
+            // Обновляем звезды
+            starBackground = new StarBackground(150);
+        }
+
+        function gameLoop(timestamp) {
+            const dt = Math.min((timestamp - lastTime) / 1000, 0.033);
+            lastTime = timestamp;
+            
+            // Очистка экрана
+            ctx.fillStyle = '#050519';
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+            
+            // Рисуем фон
+            starBackground.update();
+            starBackground.draw(ctx);
+            
+            // Обновление в зависимости от состояния игры
+            switch (gameState) {
+                case GameState.PLAYING:
+                    updateGame(dt);
+                    break;
+                case GameState.PAUSED:
+                case GameState.GAME_OVER:
+                case GameState.MENU:
+                    // Только рисуем фон
+                    break;
+            }
+            
+            // Рисуем игровые объекты
+            drawGame();
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updateGame(dt) {
+            // Обновление времени
+            gameTime += dt;
+            difficultyTimer += dt;
+            
+            // Увеличение сложности
+            if (difficultyTimer >= difficultyInterval / 1000) {
+                difficultyTimer = 0;
+                meteorSpawnInterval = Math.max(600, meteorSpawnInterval * 0.9);
+            }
+            
+            // Спавн метеоритов
+            const currentTime = Date.now();
+            if (currentTime - lastMeteorSpawn > meteorSpawnInterval) {
+                const difficulty = 1.0 + (gameTime / 30);
+                meteors.push(new Meteor(Math.min(2.0, difficulty)));
+                lastMeteorSpawn = currentTime;
+            }
+            
+            // Спавн бонусов
+            if (currentTime - lastPowerUpSpawn > powerUpSpawnInterval) {
+                powerups.push(new PowerUp());
+                lastPowerUpSpawn = currentTime;
+            }
+            
+            // Обновление ракеты
+            rocket.update(dt);
+            
+            // Обновление метеоритов
+            for (let i = meteors.length - 1; i >= 0; i--) {
+                if (meteors[i].update(dt)) {
+                    meteors.splice(i, 1);
+                    meteorsDodged++;
+                    score += 5;
+                }
+            }
+            
+            // Обновление бонусов
+            for (let i = powerups.length - 1; i >= 0; i--) {
+                if (powerups[i].update(dt)) {
+                    powerups.splice(i, 1);
+                } else if (rocket.checkPowerUpCollision(powerups[i])) {
+                    rocket.applyPowerUp(powerups[i]);
+                    powerups.splice(i, 1);
+                    score += 20;
+                }
+            }
+            
+            // Обновление частиц и проверка столкновений пуль
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update(dt);
+                
+                if (!particles[i].active) {
+                    particles.splice(i, 1);
+                    continue;
+                }
+                
+                if (particles[i].type === ParticleType.BULLET) {
+                    for (let j = meteors.length - 1; j >= 0; j--) {
+                        if (rocket.checkBulletCollision(particles[i], meteors[j])) {
+                            particles[i].active = false;
+                            if (meteors[j].takeDamage()) {
+                                createExplosion(meteors[j].position.x, meteors[j].position.y, 20);
+                                meteors.splice(j, 1);
+                                meteorsDestroyed++;
+                                score += 15;
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // Проверка столкновений ракеты с метеоритами
+            for (let i = meteors.length - 1; i >= 0; i--) {
+                if (rocket.checkCollision(meteors[i])) {
+                    rocket.takeDamage();
+                    meteors.splice(i, 1);
+                    gameOver();
+                    break;
+                }
+            }
+            
+            // Обновление статистики
+            updateStats();
+        }
+
+        function drawGame() {
+            // Рисуем бонусы
+            for (const powerup of powerups) {
+                powerup.draw(ctx);
+            }
+            
+            // Рисуем метеориты
+            for (const meteor of meteors) {
+                meteor.draw(ctx);
+            }
+            
+            // Рисуем частицы
+            for (const particle of particles) {
+                particle.draw(ctx);
+            }
+            
+            // Рисуем ракету
+            rocket.draw(ctx);
+        }
+
+        function updateStats() {
+            document.getElementById('score').textContent = `Счет: ${score}`;
+            document.getElementById('gameTime').textContent = `Время: ${Math.floor(gameTime)}с`;
+            document.getElementById('destroyed').textContent = `Уничтожено: ${meteorsDestroyed}`;
+            
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('cosmicHighScore', highScore);
+                document.getElementById('highScore').textContent = `Рекорд: ${highScore}`;
+            }
+        }
+
+        // ==================== УПРАВЛЕНИЕ ИГРОЙ ====================
+        function showScreen(screenName) {
+            document.getElementById('menuScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'none';
+            document.getElementById('pauseScreen').style.display = 'none';
+            document.getElementById('gameOverScreen').style.display = 'none';
+            
+            document.getElementById(screenName + 'Screen').style.display = 'flex';
+        }
+
+        function startGame() {
+            gameState = GameState.PLAYING;
+            rocket.respawn();
+            score = 0;
+            gameTime = 0;
+            meteorsDestroyed = 0;
+            meteorsDodged = 0;
+            meteors = [];
+            powerups = [];
+            particles = [];
+            lastMeteorSpawn = Date.now();
+            lastPowerUpSpawn = Date.now();
+            difficultyTimer = 0;
+            meteorSpawnInterval = 1500;
+            
+            updateStats();
+            showScreen('game');
+        }
+
+        function togglePause() {
+            if (gameState === GameState.PLAYING) {
+                gameState = GameState.PAUSED;
+                showScreen('pause');
+            } else if (gameState === GameState.PAUSED) {
+                gameState = GameState.PLAYING;
+                showScreen('game');
+            }
+        }
+
+        function gameOver() {
+            gameState = GameState.GAME_OVER;
+            
+            document.getElementById('finalScore').textContent = `Счет: ${score}`;
+            document.getElementById('finalTime').textContent = `Время: ${Math.floor(gameTime)}с`;
+            document.getElementById('finalDestroyed').textContent = `Уничтожено: ${meteorsDestroyed}`;
+            document.getElementById('finalDodged').textContent = `Избежано: ${meteorsDodged}`;
+            
+            showScreen('gameOver');
+        }
+
+        function restartGame() {
+            startGame();
+        }
+
+        function showMenu() {
+            gameState = GameState.MENU;
+            document.getElementById('highScoreMenu').textContent = `Рекорд: ${highScore}`;
+            showScreen('menu');
+        }
+
+        function quitGame() {
+            if (confirm('Выйти из игры?')) {
+                window.close();
+            }
+        }
+
+        function moveLeft(start) {
+            rocket.movingLeft = start;
+        }
+
+        function moveRight(start) {
+            rocket.movingRight = start;
+        }
+
+        function shoot() {
+            if (gameState === GameState.PLAYING) {
+                rocket.manualShoot();
+            }
+        }
+
+        // ==================== ЗАПУСК ИГРЫ ====================
+        window.addEventListener('load', init);
+        
+        // Предотвращаем контекстное меню на кнопках
+        document.addEventListener('contextmenu', function(e) {
+            if (e.target.classList.contains('button') || 
+                e.target.classList.contains('control-btn')) {
+                e.preventDefault();
+            }
+        });
+        
+        // Обработка клавиш для десктопной версии
+        document.addEventListener('keydown', function(e) {
+            if (gameState !== GameState.PLAYING) return;
+            
+            switch(e.key) {
+                case 'ArrowLeft':
+                case 'a':
+                    moveLeft(true);
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                    moveRight(true);
+                    break;
+                case ' ':
+                case 'w':
+                    shoot();
+                    break;
+                case 'Escape':
+                    togglePause();
+                    break;
+            }
+        });
+        
+        document.addEventListener('keyup', function(e) {
+            if (gameState !== GameState.PLAYING) return;
+            
+            switch(e.key) {
+                case 'ArrowLeft':
+                case 'a':
+                    moveLeft(false);
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                    moveRight(false);
+                    break;
+            }
+        });
+    </script>
+</body>
+                  </html>
